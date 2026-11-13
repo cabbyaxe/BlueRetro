@@ -28,12 +28,20 @@
 #include "bare_metal_app_cpu.h"
 #include "manager.h"
 
+#ifdef CONFIG_BLUERETRO_HW_IBLUECONTROL
+#define BOOT_BTN_PIN 16
+#else
 #define BOOT_BTN_PIN 0
+#endif
 
 #define RESET_PIN 14
 
 #define POWER_ON_PIN 13
+#ifdef CONFIG_BLUERETRO_HW_IBLUECONTROL
+#define POWER_OFF_PIN 17
+#else
 #define POWER_OFF_PIN 16
+#endif
 #define POWER_SENSE_PIN 39
 
 #define POWER_OFF_ALT_PIN 12
@@ -46,10 +54,17 @@
 #define SENSE_P1_ALT_PIN 15
 #define SENSE_P2_ALT_PIN 34
 
+#ifdef CONFIG_BLUERETRO_HW_IBLUECONTROL
+#define LED_P1_PIN 15
+#define LED_P2_PIN 4
+#define LED_P3_PIN 2
+#define LED_P4_PIN 12
+#else
 #define LED_P1_PIN 2
 #define LED_P2_PIN 4
 #define LED_P3_PIN 12
 #define LED_P4_PIN 15
+#endif
 
 #define INHIBIT_CNT 200
 
@@ -676,6 +691,14 @@ void sys_mgr_init(uint32_t package) {
 
     hw_config_patch();
 
+#ifdef CONFIG_BLUERETRO_HW_IBLUECONTROL
+    /* iBlueControl board gates console power with a switch on GPIO13:
+     * active-high and level held (not a power button pulse). */
+    hw_config.power_pin_is_hold = 1;
+    hw_config.power_pin_polarity = 0;
+    hw_config.power_pin_od = 0;
+#endif
+
     err_led_cfg_update();
 
     led_init_cnt = hw_config.port_cnt;
@@ -761,11 +784,19 @@ void sys_mgr_init(uint32_t package) {
         gpio_set_level(SENSE_P3_PIN, 1);
     }
 
+#ifdef CONFIG_BLUERETRO_HW_IBLUECONTROL
+    /* Same as vendor FW: enable console power 1 s after init and hold it.
+     * No deep sleep here, it would drop GPIO13 and cut console power. */
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    sys_mgr_power_on();
+    printf("# %s: iBlueControl console power on (GPIO%d held high)\n", __FUNCTION__, POWER_ON_PIN);
+#else
     /* If boot switch pressed at boot, trigger system on and goes to deep sleep */
     if (sys_mgr_get_boot_btn() && !sys_mgr_get_power()) {
         sys_mgr_power_on();
         sys_mgr_deep_sleep();
     }
+#endif
 #endif /* CONFIG_BLUERETRO_HW2 */
 
     xTaskCreatePinnedToCore(sys_mgr_task, "sys_mgr_task", 2048, NULL, 5, NULL, 0);

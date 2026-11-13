@@ -14,6 +14,8 @@
 
 #ifdef CONFIG_BLUERETRO_SYSTEM_SEA_BOARD
 #define ERR_LED_PIN 32
+#elif defined(CONFIG_BLUERETRO_HW_IBLUECONTROL)
+#define ERR_LED_PIN 22
 #else
 #define ERR_LED_PIN 17
 #endif

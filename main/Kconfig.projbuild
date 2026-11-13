@@ -6,6 +6,17 @@ menu "BlueRetro"
         help
             Select this to enable HW2 features like port detection.
 
+    config BLUERETRO_HW_IBLUECONTROL
+        bool "iBlueControlMod (NGC clone) pinout"
+        depends on BLUERETRO_HW2
+        default n
+        help
+            Pin remap for the "iBlueControlMod" GameCube clone board
+            (ESP32-WROOM-32, PCB V1.1). Differences vs official HW2:
+            boot button GPIO16 (was 0), power-off GPIO17 (was 16),
+            error LED GPIO22 (was 17), port LEDs P1-P4 = 15,4,2,12
+            (was 2,4,12,15). Recovered from the vendor firmware.
+
     choice
         prompt "Select universal or specific system"
         default BLUERETRO_SYSTEM_UNIVERSAL
