@@ -1,0 +1,63 @@
+name: ibluecontrol
+on:
+  push:
+    branches: [ ibluecontrol ]
+    tags: [ 'ibc-*' ]
+  pull_request:
+    branches: [ ibluecontrol ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/darthcloud/idf-blueretro:v5.5.0_2024-12-02
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+    - name: Build iBlueControlMod GameCube firmware
+      shell: bash
+      run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        . $IDF_PATH/export.sh
+        rm -fr build
+        echo "$(git describe --always --tags --dirty) gamecube" | cut -c -31 > version.txt
+        cat version.txt
+        cp configs/ibluecontrol/gamecube sdkconfig
+        BR_HW=_ibluecontrol BR_SYS=_gamecube idf.py reconfigure build
+    - name: Collect release files
+      shell: bash
+      run: |
+        mkdir -p out
+        cp build/BlueRetro_ibluecontrol_gamecube.bin out/
+        cp ibluecontrol/tools/ibc_flash.py ibluecontrol/tools/safe_read_flash.py out/
+        cp ibluecontrol/README.md out/README_iBlueControl.md
+        (cd out && sha256sum * > SHA256SUMS.txt)
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ibluecontrol_gamecube
+        path: out/*
+        if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/ibc-')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: ibluecontrol_gamecube
+        path: out
+    - name: Create GitHub release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release create "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" \
+          --title "$GITHUB_REF_NAME" --notes-file out/README_iBlueControl.md --draft

@@ -1,3 +1,6 @@
+> **This is the `ibluecontrol` fork:** BlueRetro v25.04 for the "iBlueControlMod" GameCube internal board.
+> Flashing guide, downloads and hardware notes: [ibluecontrol/README.md](ibluecontrol/README.md). Everything below is the original upstream README.
+
  <p align="center"><a href="https://blueretro.com/products/brx"><img src="https://github.com/darthcloud/img/blob/main/brx_banner.png"/></a></p>
 
 # BlueRetro
